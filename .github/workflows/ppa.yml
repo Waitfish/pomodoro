@@ -18,7 +18,7 @@ jobs:
       - name: Build the Linux binaries the package ships
         run: go tool mygo build -platform linux/amd64,linux/arm64
       - name: Install packaging tools
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debhelper
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debhelper devscripts
       - name: Build the source package
         run: dpkg-buildpackage -S -d -us -uc
       - name: Upload to the Launchpad PPA
@@ -29,7 +29,11 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$LAUNCHPAD_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p 2222 ppa.launchpad.net >> ~/.ssh/known_hosts || true
+          for i in 1 2 3; do
+            ssh-keyscan -T 10 -p 2222 ppa.launchpad.net >> ~/.ssh/known_hosts && break
+            sleep 5
+          done
+          grep -q "ppa.launchpad.net" ~/.ssh/known_hosts
           version=$(jq -r .version mygo.json)
           if [ "$GITHUB_EVENT_NAME" = push ]; then
             test "v$version" = "$GITHUB_REF_NAME" || {
