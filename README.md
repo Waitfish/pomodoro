@@ -38,7 +38,7 @@ go tool mygo build   # 打包 .app / DMG，输出在 build/
 ### Ubuntu（PPA）
 
 ```sh
-sudo add-apt-repository ppa:daiwj2024/fangqiezhong
+sudo add-apt-repository ppa:daiwj2024/pomodoro
 sudo apt update
 sudo apt install fangqiezhong
 ```

@@ -34,4 +34,4 @@ jobs:
               exit 1
             }
           fi
-          dput ppa:daiwj2024/fangqiezhong "../fangqiezhong_${version}_source.changes"
+          dput ppa:daiwj2024/pomodoro "../fangqiezhong_${version}_source.changes"
