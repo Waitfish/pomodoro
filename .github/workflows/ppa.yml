@@ -21,7 +21,15 @@ jobs:
       - name: Install packaging tools
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debhelper dput python3-paramiko
       - name: Build the source package
-        run: dpkg-buildpackage -S -d -us -uc
+        env:
+          LAUNCHPAD_GPG_PRIVATE_KEY: ${{ secrets.LAUNCHPAD_GPG_PRIVATE_KEY }}
+        run: |
+          # Launchpad's queue identifies the uploader by the GPG signature
+          # on .changes/.dsc and mails the verdict; unsigned uploads are
+          # silently dropped. The key's email must match the Launchpad
+          # account's verified email.
+          printf '%s\n' "$LAUNCHPAD_GPG_PRIVATE_KEY" | gpg --batch --import
+          dpkg-buildpackage -S -d -k8A274FB7745E4274CA84D1F9E36EBF9ACA024BA7
       - name: Upload to the Launchpad PPA
         env:
           LAUNCHPAD_SSH_PRIVATE_KEY: ${{ secrets.LAUNCHPAD_SSH_PRIVATE_KEY }}

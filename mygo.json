@@ -2,14 +2,14 @@
   "name": "番茄钟",
   "slug": "fangqiezhong",
   "identifier": "com.example.pomodoro",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "out": "build",
   "updates": {
     "publicKey": "/s6fIxypgzjvfZqZqaPChz8C3jG9Nvw7CdZU/YmUo0E=",
     "github": "Waitfish/pomodoro"
   },
   "linux": {
-    "maintainer": "Waitfish <7663932+Waitfish@users.noreply.github.com>",
+    "maintainer": "Waitfish <daiwj2024@outlook.com>",
     "comment": "番茄钟：圆形进度环 Pomodoro 计时器",
     "categories": ["Utility"],
     "command": "fangqiezhong",

@@ -1,7 +1,7 @@
 Source: fangqiezhong
 Section: utils
 Priority: optional
-Maintainer: Waitfish <7663932+Waitfish@users.noreply.github.com>
+Maintainer: Waitfish <daiwj2024@outlook.com>
 Build-Depends: debhelper-compat (= 13)
 Standards-Version: 4.6.2
 Rules-Requires-Root: no
