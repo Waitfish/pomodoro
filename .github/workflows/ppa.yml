@@ -25,10 +25,11 @@ jobs:
         env:
           LAUNCHPAD_SSH_PRIVATE_KEY: ${{ secrets.LAUNCHPAD_SSH_PRIVATE_KEY }}
         run: |
+          set -ex
           mkdir -p ~/.ssh
           printf '%s\n' "$LAUNCHPAD_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p 2222 ppa.launchpad.net >> ~/.ssh/known_hosts
+          ssh-keyscan -p 2222 ppa.launchpad.net >> ~/.ssh/known_hosts || true
           version=$(jq -r .version mygo.json)
           if [ "$GITHUB_EVENT_NAME" = push ]; then
             test "v$version" = "$GITHUB_REF_NAME" || {
@@ -36,4 +37,5 @@ jobs:
               exit 1
             }
           fi
-          dput ppa:daiwj2024/ppa "../fangqiezhong_${version}_source.changes"
+          ls -la ..
+          dput -f ppa:daiwj2024/ppa "../fangqiezhong_${version}_source.changes"
