@@ -1,0 +1,21 @@
+name: PPA debug
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe Launchpad
+        run: |
+          echo "== sourcepackagecollection"
+          curl -sL --max-time 30 "https://api.launchpad.net/1.0/~daiwj2024/+archive/ubuntu/ppa/+sourcepackagecollection" | head -c 1200
+          echo
+          echo "== archive object"
+          curl -sL --max-time 30 "https://api.launchpad.net/1.0/~daiwj2024/+archive/ubuntu/ppa" | python3 -c "import json,sys; d=json.load(sys.stdin); [print(k,'=',d[k]) for k in sorted(d) if not k.startswith(('$','ws','self_link','owner_link','web_link'))]" | head -30
+          echo "== apt dists"
+          curl -sL --max-time 30 "https://ppa.launchpad.net/daiwj2024/ppa/ubuntu/dists/" | head -c 800
+          echo
+          echo "== packages page"
+          curl -sL --max-time 30 "https://launchpad.net/~daiwj2024/+archive/ubuntu/ppa/+packages" | grep -oiE "(fangqiezhong|does not contain any packages|pending [a-z ]*)" | sort -u | head
