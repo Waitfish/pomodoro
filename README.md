@@ -45,6 +45,8 @@ sudo apt install fangqiezhong
 
 安装后可从应用菜单启动，或运行 `fangqiezhong` 命令。PPA 由 Launchpad 构建签名，覆盖 amd64 与 arm64。
 
+> 注意：`ppa.launchpad.net`（apt 下载域名）在中国大陆网络下常不可达，添加 PPA 后 `apt update` 超时属正常现象，需要代理，或直接从 Releases 下载 `.deb` 安装。
+
 ### 其他平台
 
 从 [Releases](../../releases) 下载对应平台的 `.dmg` / `-setup-*.exe` / `.deb`，或用 `install.sh` / `install.ps1` 一键安装。
