@@ -2,8 +2,9 @@ name: PPA
 
 on:
   workflow_dispatch:
-  # Re-enable once the PPA exists at https://launchpad.net/~daiwj2024/+ppas
-  # and the LAUNCHPAD_SSH_PRIVATE_KEY secret is set:
+  # The PPA lives at https://launchpad.net/~daiwj2024/+archive/ubuntu/ppa
+  # (display name "pomodoro", URL name "ppa"). Re-enable the tag trigger
+  # once uploads are confirmed to publish:
   # push:
   #   tags: ["v*"]
 
@@ -52,4 +53,25 @@ jobs:
               exit 1
             }
           fi
-          dput -f lp-sftp:ppa "../fangqiezhong_${version}_source.changes"
+          # A rejected or still-queued earlier upload makes this fail with
+          # the queue's own words; keep going to the verification step.
+          dput -f lp-sftp:ppa "../fangqiezhong_${version}_source.changes" || true
+      - name: Verify the publication
+        run: |
+          version=$(jq -r .version mygo.json)
+          for i in $(seq 1 20); do
+            sleep 30
+            body=$(curl -sL --max-time 30 "https://api.launchpad.net/1.0/~daiwj2024/+archive/ubuntu/ppa/+sourcepackagecollection" || true)
+            if printf '%s' "$body" | grep -q fangqiezhong; then
+              printf '%s' "$body" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          for e in d.get('entries',[]):
+              print('published:', e.get('name'), e.get('version'), e.get('self_link'))
+          "
+              exit 0
+            fi
+            echo "attempt $i: not published yet"
+          done
+          echo "the package did not appear within 10 minutes" >&2
+          exit 1
