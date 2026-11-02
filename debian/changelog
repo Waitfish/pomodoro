@@ -1,0 +1,8 @@
+fangqiezhong (1.0.3) unstable; urgency=medium
+
+  * 修复：时钟改由后台 goroutine 驱动，窗口最小化、被遮挡或关到
+    托盘时倒计时、到期铃声与桌面通知不再冻结
+  * 番茄计数持久化到 state.json，重启保留
+  * 托盘菜单新增「重置番茄计数」
+
+ -- Waitfish <7663932+Waitfish@users.noreply.github.com>  Mon, 02 Nov 2026 14:47:00 +0800
