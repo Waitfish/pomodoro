@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2 - 2026-11-02
+
+- Linux 打包元数据完善：`webview: false`（纯 native UI，去掉 WebKitGTK 依赖）、托盘依赖 `libayatana-appindicator3-1`、`/usr/bin/fangqiezhong` 命令、desktop entry 修复
+- 新增 Launchpad PPA 发布通道：`debian/` 源码包 + `ppa.yml` 工作流，Ubuntu 用户可通过 `ppa:daiwj2024/fangqiezhong` 安装
+
 ## 1.0.1 - 2026-11-02
 
 - 修正包名拼音：slug 显式设为 `fangqiezhong`（mygo 对「茄」默认取了 jié 读音，此前生成 `fan-jia-zhong`）

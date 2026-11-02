@@ -1,0 +1,2 @@
+tar-ignore = ".mygo"
+tar-ignore = ".agents"

@@ -1,0 +1,15 @@
+Source: fangqiezhong
+Section: utils
+Priority: optional
+Maintainer: Waitfish <7663932+Waitfish@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+
+Package: fangqiezhong
+Architecture: amd64 arm64
+Depends: ${misc:Depends}, libgtk-3-0 | libgtk-3-0t64, libayatana-appindicator3-1
+Description: 番茄钟桌面应用 — Pomodoro 计时器
+ 圆形进度环倒计时、专注/休息自动切换并计数、4 种内置合成铃声、
+ 桌面通知与系统托盘（菜单栏显示倒计时）。
+ 用 MyGo native UI 以纯 Go 编写，无 webview。

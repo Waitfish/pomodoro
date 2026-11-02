@@ -1,0 +1,35 @@
+name: PPA
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Build the Linux binaries the package ships
+        run: go tool mygo build -platform linux/amd64,linux/arm64
+      - name: Build the source package
+        run: dpkg-buildpackage -S -d -us -uc
+      - name: Upload to the Launchpad PPA
+        env:
+          LAUNCHPAD_SSH_PRIVATE_KEY: ${{ secrets.LAUNCHPAD_SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$LAUNCHPAD_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p 2222 ppa.launchpad.net >> ~/.ssh/known_hosts
+          version=$(jq -r .version mygo.json)
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            test "v$version" = "$GITHUB_REF_NAME" || {
+              echo "tag $GITHUB_REF_NAME does not match version $version" >&2
+              exit 1
+            }
+          fi
+          dput ppa:daiwj2024/fangqiezhong "../fangqiezhong_${version}_source.changes"

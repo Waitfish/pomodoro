@@ -1,0 +1,21 @@
+#!/usr/bin/make -f
+# The Linux binaries are built by CI with `mygo build -platform linux/...`
+# and ship in this source package: Launchpad builders have no network and
+# no Go 1.27, so this recipe only installs the prebuilt files, mirroring
+# the layout of mygo's own Debian package.
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	:
+
+override_dh_auto_install:
+	arch=$$(dpkg-architecture -qDEB_HOST_ARCH); \
+	src=build/linux-$$arch; \
+	test -x $$src/fangqiezhong || { echo "missing $$src/fangqiezhong: build it first with mygo build -platform linux/$$arch" >&2; exit 1; }; \
+	install -Dm755 $$src/fangqiezhong debian/fangqiezhong/opt/fangqiezhong/fangqiezhong; \
+	install -Dm644 $$src/icon.png debian/fangqiezhong/opt/fangqiezhong/icon.png; \
+	install -Dm644 $$src/fangqiezhong.desktop debian/fangqiezhong/usr/share/applications/fangqiezhong.desktop; \
+	install -Dm644 $$src/fangqiezhong-256x256.png debian/fangqiezhong/usr/share/icons/hicolor/256x256/apps/fangqiezhong.png; \
+	install -Dm644 $$src/fangqiezhong-512x512.png debian/fangqiezhong/usr/share/icons/hicolor/512x512/apps/fangqiezhong.png

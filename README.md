@@ -33,6 +33,22 @@ go tool mygo build   # 打包 .app / DMG，输出在 build/
 - 自定义绘制用 `Element.Draw(func(p *ui.Painter, r ui.Rect))`：进度环、番茄计数图标都是这个 API
 - 托盘图标与 App 图标都是程序生成的 PNG（见 `tools/genicon`）
 
+## 安装
+
+### Ubuntu（PPA）
+
+```sh
+sudo add-apt-repository ppa:daiwj2024/fangqiezhong
+sudo apt update
+sudo apt install fangqiezhong
+```
+
+安装后可从应用菜单启动，或运行 `fangqiezhong` 命令。PPA 由 Launchpad 构建签名，覆盖 amd64 与 arm64。
+
+### 其他平台
+
+从 [Releases](../../releases) 下载对应平台的 `.dmg` / `-setup-*.exe` / `.deb`，或用 `install.sh` / `install.ps1` 一键安装。
+
 ## 发布（GitHub Actions）
 
 推送 `v*` 标签即自动跨平台构建并发布 Release：
@@ -53,14 +69,17 @@ git tag v1.0.1 && git push origin v1.0.1
 
 > 未配置代码签名证书：macOS 产物为 ad-hoc 签名（其他 Mac 首次打开需右键“打开”），Windows 产物未签名（SmartScreen 会警告）。
 
+推标签同时触发 `ppa.yml`：交叉构建 Linux 二进制 → 组装 `debian/` 源码包 → `dput` 上传 Launchpad PPA（Launchpad 构建机无网络且 Go 版本过旧，故源码包内携带预构建二进制，rules 只做安装）。上传凭据为仓库 Secret `LAUNCHPAD_SSH_PRIVATE_KEY`。
+
 ## 项目结构
 
 ```
 main.go             # 应用状态 + 视图 + 铃声合成 + 托盘/通知
 main_test.go        # ui.Tester 无窗口测试
 screenshot_test.go  # 渲染 README 截图（SHOTS=1 go test -run TestScreenshots）
+debian/             # PPA 源码包打包（native 格式，安装预构建二进制）
 tools/genicon/      # 生成 resources/icon.png 的图标脚本
-mygo.json           # 应用名、slug、标识符、版本、更新配置
+mygo.json           # 应用名、slug、标识符、版本、更新与 Linux 打包配置
 resources/          # 应用图标
 docs/               # README 截图
 ```
