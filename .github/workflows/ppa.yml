@@ -18,7 +18,7 @@ jobs:
       - name: Build the Linux binaries the package ships
         run: go tool mygo build -platform linux/amd64,linux/arm64
       - name: Install packaging tools
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debhelper devscripts
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debhelper dput
       - name: Build the source package
         run: dpkg-buildpackage -S -d -us -uc
       - name: Upload to the Launchpad PPA
