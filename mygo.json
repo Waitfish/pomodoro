@@ -1,0 +1,6 @@
+{
+  "name": "番茄钟",
+  "identifier": "com.example.pomodoro",
+  "version": "1.0.0",
+  "out": "build"
+}
