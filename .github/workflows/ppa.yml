@@ -30,7 +30,7 @@ jobs:
           printf '%s\n' "$LAUNCHPAD_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           for i in 1 2 3; do
-            ssh-keyscan -T 10 -p 2222 ppa.launchpad.net >> ~/.ssh/known_hosts && break
+            ssh-keyscan -4 -T 10 -p 2222 ppa.launchpad.net >> ~/.ssh/known_hosts && break
             sleep 5
           done
           grep -q "ppa.launchpad.net" ~/.ssh/known_hosts
