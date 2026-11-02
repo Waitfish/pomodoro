@@ -2,6 +2,11 @@
 
 一个用 [MyGo](https://github.com/egoist/mygo) 原生 UI 写的桌面番茄钟，纯 Go、无 cgo、无 webview——窗口由 MyGo 直接在 GPU 上绘制，打包后是一个约 9 MB 的单二进制应用。
 
+![浅色模式](docs/screenshot.png#gh-light-mode-only)
+![深色模式](docs/screenshot-dark.png#gh-dark-mode-only)
+
+> 截图由 `ui.Tester` 无窗口渲染直接导出（`SHOTS=1 go test -run TestScreenshots`），左：浅色专注模式；右：深色休息模式 + 设置面板。
+
 ## 功能
 
 - **圆形进度环倒计时**：自绘 `ui.Path` + `Path.Trim`，弧线随剩余时间消退；专注为番茄红，休息为绿色
@@ -33,10 +38,10 @@ go tool mygo build   # 打包 .app / DMG，输出在 build/
 推送 `v*` 标签即自动跨平台构建并发布 Release：
 
 ```sh
-git tag v1.0.0 && git push origin v1.0.0
+git tag v1.0.1 && git push origin v1.0.1
 ```
 
-`.github/workflows/release.yml` 会并行跑三个矩阵：
+`.github/workflows/release.yml` 会并行跑三个矩阵（产物文件名用 `mygo.json` 里的 `slug: fangqiezhong`，mygo 对「茄」的默认读音是 jié，需显式指定）：
 
 | 平台 | Runner | 产物 |
 | --- | --- | --- |
@@ -51,11 +56,13 @@ git tag v1.0.0 && git push origin v1.0.0
 ## 项目结构
 
 ```
-main.go          # 应用状态 + 视图 + 铃声合成 + 托盘/通知
-main_test.go     # ui.Tester 无窗口测试
-tools/genicon/   # 生成 resources/icon.png 的图标脚本
-mygo.json        # 应用名、标识符、版本、输出目录
-resources/       # 应用图标
+main.go             # 应用状态 + 视图 + 铃声合成 + 托盘/通知
+main_test.go        # ui.Tester 无窗口测试
+screenshot_test.go  # 渲染 README 截图（SHOTS=1 go test -run TestScreenshots）
+tools/genicon/      # 生成 resources/icon.png 的图标脚本
+mygo.json           # 应用名、slug、标识符、版本、更新配置
+resources/          # 应用图标
+docs/               # README 截图
 ```
 
 ## 许可

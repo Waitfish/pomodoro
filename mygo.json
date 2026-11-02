@@ -1,7 +1,8 @@
 {
   "name": "番茄钟",
+  "slug": "fangqiezhong",
   "identifier": "com.example.pomodoro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "out": "build",
   "updates": {
     "publicKey": "/s6fIxypgzjvfZqZqaPChz8C3jG9Nvw7CdZU/YmUo0E=",
