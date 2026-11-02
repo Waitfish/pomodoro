@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3 - 2026-11-02
+
+- **修复：窗口最小化/关闭后时钟停走**。计时原先由视图帧驱动（`c.After`），窗口不绘制帧时倒计时、到期铃声、桌面通知、菜单栏倒计时全部冻结。现改为后台 goroutine 每 200ms 经 `Window.Update` 投递主线程，窗口不可见时一切照常
+- **修复：番茄计数不持久**。计数现在保存到 `state.json`，重启后保留；托盘菜单新增「重置番茄计数」
+
 ## 1.0.2 - 2026-11-02
 
 - Linux 打包元数据完善：`webview: false`（纯 native UI，去掉 WebKitGTK 依赖）、托盘依赖 `libayatana-appindicator3-1`、`/usr/bin/fangqiezhong` 命令、desktop entry 修复

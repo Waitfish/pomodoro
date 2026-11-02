@@ -28,8 +28,8 @@ go tool mygo build   # 打包 .app / DMG，输出在 build/
 
 ## 实现要点
 
-- 视图是「状态 → 界面」的声明式函数，每帧重建（类似 Dear ImGui / egui）
-- 倒计时基于墙钟（`endsAt`），配合 `c.Now()` + `c.After(time.Second)` 请求下一帧；窗口被遮挡也不丢时间
+- 视图是「状态 → 界面」的声明式函数，窗口每次绘制时重建（类似 Dear ImGui / egui）
+- **计时在后台 goroutine**：每 200ms 经 `Window.Update` 投递主线程。视图只在窗口绘制时运行，最小化/遮挡/关到托盘就没有帧——若靠 `c.After` 驱动，时钟会冻结、到期不提醒（1.0.3 修复的正是这个）。倒计时基于墙钟（`endsAt`），迟到或丢失的帧不丢时间
 - 自定义绘制用 `Element.Draw(func(p *ui.Painter, r ui.Rect))`：进度环、番茄计数图标都是这个 API
 - 托盘图标与 App 图标都是程序生成的 PNG（见 `tools/genicon`）
 

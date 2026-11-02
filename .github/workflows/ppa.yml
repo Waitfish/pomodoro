@@ -2,8 +2,10 @@ name: PPA
 
 on:
   workflow_dispatch:
-  push:
-    tags: ["v*"]
+  # Re-enable once the PPA exists at https://launchpad.net/~daiwj2024/+ppas
+  # and the LAUNCHPAD_SSH_PRIVATE_KEY secret is set:
+  # push:
+  #   tags: ["v*"]
 
 jobs:
   upload:

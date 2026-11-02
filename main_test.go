@@ -2,6 +2,7 @@ package main
 
 import (
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 )
@@ -31,5 +32,26 @@ func TestView(t *testing.T) {
 	}
 	if a.mode != modeBreak || !tt.HasText("05:00") {
 		t.Errorf("skipping focus should show the break, mode %d texts %q", a.mode, tt.Texts())
+	}
+}
+
+// The clock runs on its own goroutine, so sessions turn over and count
+// even when the window draws no frame at all.
+func TestBackgroundClock(t *testing.T) {
+	a := &pomodoro{workMin: 25, breakMin: 5}
+	a.remaining = a.total()
+	a.start()
+	if a.tickerStop == nil {
+		t.Error("start should run the background clock")
+	}
+	// A session that ended turns over, counts, and keeps running.
+	a.endsAt = time.Now().Add(-time.Second)
+	a.tick(time.Now())
+	if a.done != 1 || a.mode != modeBreak || !a.running {
+		t.Errorf("an ended focus session should count and roll into the break: done %d mode %d running %v", a.done, a.mode, a.running)
+	}
+	a.pause()
+	if a.tickerStop != nil {
+		t.Error("pause should stop the background clock")
 	}
 }

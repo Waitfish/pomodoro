@@ -1,12 +1,14 @@
 // 番茄钟 (Pomodoro) — a demo app in MyGo native UI.
 //
 // The window is drawn by MyGo itself on the GPU: no HTML, no webview.
-// The state struct holds the clock; the view builds the interface from
-// it every frame, and c.After keeps the clock ticking once a second.
+// The state struct holds the clock, which runs on a goroutine so it
+// keeps counting, alarming and updating the tray even when the window
+// draws no frame — minimized, hidden or closed to the tray. The view
+// renders that state whenever the window does draw.
 //
 // The app sounds an alarm of its own synthesis (package audio), sends
 // desktop notifications, lives in the system tray, and keeps its
-// settings in the app's data directory.
+// settings and tomato count in the app's data directory.
 package main
 
 import (
@@ -47,8 +49,8 @@ type settings struct {
 var soundNames = []string{"经典提示", "清脆铃声", "三连钟", "木鱼"}
 
 // pomodoro is the state the window shows. Its view builds the interface
-// from it whenever the window needs a frame: after input, and every
-// second while the clock runs (asked for with Context.After).
+// from it whenever the window needs a frame; the clock itself runs on a
+// goroutine, so it keeps moving when the window draws none.
 type pomodoro struct {
 	mode      int           // the current session: focus or break
 	running   bool          // whether the clock is moving
@@ -62,7 +64,9 @@ type pomodoro struct {
 	set          settings       // the user's settings
 	showSettings bool           // the settings panel, open or closed
 	settingsPath string         // where settings.json lives
+	statePath    string         // where state.json lives
 	sounds       []*audio.Sound // the built-in alarms, made once
+	tickerStop   chan struct{}  // stops the background clock, when set
 
 	win       *mygo.Window
 	tray      *mygo.Tray
@@ -82,12 +86,14 @@ func (a *pomodoro) total() time.Duration {
 func (a *pomodoro) setMode(m int) {
 	a.mode = m
 	a.running = false
+	a.stopTicker()
 	a.remaining = a.total()
 }
 
 func (a *pomodoro) start() {
 	a.endsAt = time.Now().Add(a.remaining)
 	a.running = true
+	a.startTicker()
 }
 
 func (a *pomodoro) pause() {
@@ -95,12 +101,54 @@ func (a *pomodoro) pause() {
 		a.remaining = r
 	}
 	a.running = false
+	a.stopTicker()
 }
 
 func (a *pomodoro) reset() {
 	a.running = false
+	a.stopTicker()
 	a.remaining = a.total()
 	a.note = ""
+}
+
+// startTicker runs the clock on a goroutine of its own, posting each
+// beat to the main thread through Window.Update. The view only runs
+// when the window draws: minimized, hidden or closed to the tray, its
+// frames stop, and a clock driven from it would freeze and never end a
+// session. Window.Update posts to the main thread even after the window
+// is closed, so the tray, the alarms and the state keep moving.
+func (a *pomodoro) startTicker() {
+	if a.tickerStop != nil {
+		return
+	}
+	a.tickerStop = make(chan struct{})
+	stop := a.tickerStop
+	go func() {
+		t := time.NewTicker(200 * time.Millisecond)
+		defer t.Stop()
+		for {
+			select {
+			case <-t.C:
+				if a.win == nil {
+					continue
+				}
+				a.win.Update(func() {
+					a.tick(time.Now())
+					a.title()
+				})
+			case <-stop:
+				return
+			}
+		}
+	}()
+}
+
+// stopTicker ends the background clock.
+func (a *pomodoro) stopTicker() {
+	if a.tickerStop != nil {
+		close(a.tickerStop)
+		a.tickerStop = nil
+	}
 }
 
 // toggle starts or stops the clock, for the tray menu.
@@ -146,6 +194,7 @@ func (a *pomodoro) tick(now time.Time) {
 	}
 	a.remaining = a.total()
 	a.endsAt = now.Add(a.remaining)
+	a.saveState()
 }
 
 // announce sounds the alarm and, when asked, sends a desktop
@@ -233,6 +282,36 @@ func (a *pomodoro) saveSettings() {
 	}
 }
 
+// loadState reads the tomato count back, so sessions done survive a
+// restart.
+func (a *pomodoro) loadState() {
+	dir, err := mygo.App.Path(mygo.PathUserData)
+	if err != nil {
+		return
+	}
+	a.statePath = filepath.Join(dir, "state.json")
+	var st struct {
+		Done int `json:"done"`
+	}
+	if b, err := os.ReadFile(a.statePath); err == nil {
+		_ = json.Unmarshal(b, &st)
+	}
+	a.done = max(0, st.Done)
+}
+
+// saveState keeps the tomato count across restarts.
+func (a *pomodoro) saveState() {
+	if a.statePath == "" {
+		return
+	}
+	st := struct {
+		Done int `json:"done"`
+	}{Done: a.done}
+	if b, err := json.MarshalIndent(st, "", "  "); err == nil {
+		_ = os.WriteFile(a.statePath, b, 0o644)
+	}
+}
+
 // showWindow opens the window again after it was closed to the tray.
 func (a *pomodoro) showWindow() {
 	if a.win == nil || a.win.IsDestroyed() {
@@ -250,13 +329,10 @@ func (a *pomodoro) showWindow() {
 }
 
 // view builds the window from the state, on the main thread, one frame
-// at a time.
+// at a time. The clock ticks on its own goroutine (startTicker), so the
+// view only renders what the state says.
 func (a *pomodoro) view(c *ui.Context) {
 	t := c.Theme()
-	a.tick(c.Now())
-	if a.running {
-		c.After(time.Second) // ask for a frame at the clock's next beat
-	}
 	a.title()
 
 	accent, modeName := tomato, "专注"
@@ -520,8 +596,13 @@ func (a *pomodoro) makeTray() {
 		ToolTip:        "番茄钟",
 		Menu: mygo.NewMenu([]*mygo.MenuItem{
 			{Label: "显示番茄钟", Click: func(*mygo.MenuItem, *mygo.Window) { a.showWindow() }},
-			{Label: "开始 / 暂停", Click: func(*mygo.MenuItem, *mygo.Window) { a.toggle() }},
-			{Label: "重置", Click: func(*mygo.MenuItem, *mygo.Window) { a.reset() }},
+			{Label: "开始 / 暂停", Click: func(*mygo.MenuItem, *mygo.Window) { a.toggle(); a.refresh() }},
+			{Label: "重置", Click: func(*mygo.MenuItem, *mygo.Window) { a.reset(); a.refresh() }},
+			{Label: "重置番茄计数", Click: func(*mygo.MenuItem, *mygo.Window) {
+				a.done = 0
+				a.saveState()
+				a.refresh()
+			}},
 			mygo.Separator(),
 			{Role: mygo.RoleQuit},
 		}),
@@ -535,6 +616,15 @@ func (a *pomodoro) makeTray() {
 	mygo.App.OnWindowAllClosed(func() {})
 }
 
+// refresh redraws the titles and the window after a tray action, which
+// no frame would otherwise follow.
+func (a *pomodoro) refresh() {
+	a.title()
+	if a.win != nil && !a.win.IsDestroyed() {
+		a.win.Invalidate()
+	}
+}
+
 func main() {
 	a := &pomodoro{
 		workMin: 25,
@@ -544,6 +634,7 @@ func main() {
 	a.remaining = a.total()
 	mygo.App.WhenReady(func() {
 		a.loadSettings()
+		a.loadState()
 		a.sounds = buildSounds()
 		a.makeTray()
 		a.showWindow()
