@@ -66,17 +66,11 @@ jobs:
           dput -f lp-sftp:ppa "../fangqiezhong_${version}_source.changes" || true
       - name: Verify the publication
         run: |
-          version=$(jq -r .version mygo.json)
           for i in $(seq 1 20); do
             sleep 30
-            body=$(curl -sL --max-time 30 "https://api.launchpad.net/1.0/~daiwj2024/+archive/ubuntu/ppa/+sourcepackagecollection" || true)
-            if printf '%s' "$body" | grep -q fangqiezhong; then
-              printf '%s' "$body" | python3 -c "
-          import json,sys
-          d=json.load(sys.stdin)
-          for e in d.get('entries',[]):
-              print('published:', e.get('name'), e.get('version'), e.get('self_link'))
-          "
+            body=$(curl -sL --max-time 30 "https://launchpad.net/~daiwj2024/+archive/ubuntu/ppa/+packages" || true)
+            if printf '%s' "$body" | grep -qi fangqiezhong; then
+              echo "the package is in the PPA; builds are running"
               exit 0
             fi
             echo "attempt $i: not published yet"
