@@ -28,6 +28,26 @@ go tool mygo build   # 打包 .app / DMG，输出在 build/
 - 自定义绘制用 `Element.Draw(func(p *ui.Painter, r ui.Rect))`：进度环、番茄计数图标都是这个 API
 - 托盘图标与 App 图标都是程序生成的 PNG（见 `tools/genicon`）
 
+## 发布（GitHub Actions）
+
+推送 `v*` 标签即自动跨平台构建并发布 Release：
+
+```sh
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+`.github/workflows/release.yml` 会并行跑三个矩阵：
+
+| 平台 | Runner | 产物 |
+| --- | --- | --- |
+| macOS | macos-latest | `.app` + `.dmg`（arm64 & Intel） |
+| Windows | ubuntu-latest（纯 Go 交叉编译） | NSIS 安装包 `-setup-*.exe`（amd64 & arm64） |
+| Linux | ubuntu-latest | `.deb`、`.tar.gz`、`install.sh`（amd64 & arm64） |
+
+所有产物连同**签名过的更新清单**（`update-*.json`，供应用自动更新）上传到草稿 Release，全部构建成功后自动发布。更新签名私钥保存在仓库 Secret `MYGO_UPDATER_PRIVATE_KEY` 中，公钥在 `mygo.json`；发布说明取自 `CHANGELOG.md` 对应版本小节。
+
+> 未配置代码签名证书：macOS 产物为 ad-hoc 签名（其他 Mac 首次打开需右键“打开”），Windows 产物未签名（SmartScreen 会警告）。
+
 ## 项目结构
 
 ```
