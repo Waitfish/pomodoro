@@ -29,11 +29,22 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$LAUNCHPAD_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
+          # Launchpad PPA uploads speak SSH/SFTP on port 22 (2222 is for git).
+          # The built-in dput "ppa:" profile uses plain FTP, which has been
+          # unreliable since mid-2026 (Launchpad bug 2158204); use sftp.
           for i in 1 2 3; do
-            ssh-keyscan -4 -T 10 -p 2222 ppa.launchpad.net >> ~/.ssh/known_hosts && break
+            ssh-keyscan -4 -T 10 ppa.launchpad.net >> ~/.ssh/known_hosts && break
             sleep 5
           done
           grep -q "ppa.launchpad.net" ~/.ssh/known_hosts
+          cat > ~/.dput.cf <<'EOF'
+          [lp-sftp]
+          fqdn = ppa.launchpad.net
+          method = sftp
+          incoming = ~daiwj2024/ubuntu/%(lp-sftp)s
+          login = daiwj2024
+          allow_unsigned_uploads = 1
+          EOF
           version=$(jq -r .version mygo.json)
           if [ "$GITHUB_EVENT_NAME" = push ]; then
             test "v$version" = "$GITHUB_REF_NAME" || {
@@ -41,5 +52,4 @@ jobs:
               exit 1
             }
           fi
-          ls -la ..
-          dput -f ppa:daiwj2024/ppa "../fangqiezhong_${version}_source.changes"
+          dput -f lp-sftp:ppa "../fangqiezhong_${version}_source.changes"
