@@ -1,12 +1,10 @@
 name: PPA
 
 on:
+  # Manual: run this after each release to push the signed source package
+  # to the PPA (https://launchpad.net/~daiwj2024/+archive/ubuntu/ppa).
+  # A tag trigger would re-upload an existing version and be rejected.
   workflow_dispatch:
-  # The PPA lives at https://launchpad.net/~daiwj2024/+archive/ubuntu/ppa
-  # (display name "pomodoro", URL name "ppa"). Re-enable the tag trigger
-  # once uploads are confirmed to publish:
-  # push:
-  #   tags: ["v*"]
 
 jobs:
   upload:
