@@ -43,7 +43,7 @@ sudo apt update
 sudo apt install fangqiezhong
 ```
 
-安装后可从应用菜单启动，或运行 `fangqiezhong` 命令。PPA 由 Launchpad 构建签名，覆盖 amd64 与 arm64。
+安装后可从应用菜单启动，或运行 `fangqiezhong` 命令。PPA 由 Launchpad 构建签名，覆盖 amd64 与 arm64，支持 Ubuntu 22.04（Jammy）及之后所有受支持的版本（24.04 Noble、26.04 Resolute 等）。20.04（Focal）已 EOL，Launchpad 不再为它发布构建，可直接用 Releases 的 `.deb`。
 
 > PPA 的 apt 下载域名为 `ppa.launchpadcontent.net`（新版 Launchpad），实测中国大陆可直连。若个别网络不可达，可配置代理或直接从 Releases 下载 `.deb` 安装。
 
