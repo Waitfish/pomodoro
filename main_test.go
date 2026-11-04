@@ -55,3 +55,23 @@ func TestBackgroundClock(t *testing.T) {
 		t.Error("pause should stop the background clock")
 	}
 }
+
+// The count is per day: crossing local midnight starts it over, and
+// within a day it keeps accumulating.
+func TestDailyRollover(t *testing.T) {
+	a := &pomodoro{workMin: 25, breakMin: 5, done: 7, date: "2000-01-01"}
+	a.tick(time.Now())
+	if a.done != 0 {
+		t.Errorf("crossing midnight should reset the count: got %d", a.done)
+	}
+	if a.date != time.Now().Format("2006-01-02") {
+		t.Errorf("the count should be stamped with today: got %q", a.date)
+	}
+	a.endsAt = time.Now().Add(-time.Second)
+	a.running = true
+	a.mode = modeWork
+	a.tick(time.Now())
+	if a.done != 1 {
+		t.Errorf("within a day the count should grow: got %d", a.done)
+	}
+}

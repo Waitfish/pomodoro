@@ -58,7 +58,8 @@ type pomodoro struct {
 	remaining time.Duration // time left, while paused
 	workMin   float64       // focus length, in minutes
 	breakMin  float64       // break length, in minutes
-	done      int           // focus sessions completed
+	done      int           // focus sessions completed today
+	date      string        // the day done belongs to, "2006-01-02"
 	note      string        // one line of status under the controls
 
 	set          settings       // the user's settings
@@ -173,8 +174,15 @@ func (a *pomodoro) skip() {
 
 // tick moves the countdown and turns over the session when one ends.
 // A session runs on the wall clock (endsAt), so frames that come late,
-// or not at all while the window is hidden, lose no time.
+// or not at all while the window is hidden, lose no time. The count is
+// per day: crossing local midnight starts it over, as in every other
+// Pomodoro app.
 func (a *pomodoro) tick(now time.Time) {
+	if d := now.Format("2006-01-02"); d != a.date {
+		a.date = d
+		a.done = 0
+		a.saveState()
+	}
 	if !a.running {
 		return
 	}
@@ -282,8 +290,8 @@ func (a *pomodoro) saveSettings() {
 	}
 }
 
-// loadState reads the tomato count back, so sessions done survive a
-// restart.
+// loadState reads the tomato count back, so today's sessions survive a
+// restart. A count stored under another day is stale and starts over.
 func (a *pomodoro) loadState() {
 	dir, err := mygo.App.Path(mygo.PathUserData)
 	if err != nil {
@@ -291,10 +299,15 @@ func (a *pomodoro) loadState() {
 	}
 	a.statePath = filepath.Join(dir, "state.json")
 	var st struct {
-		Done int `json:"done"`
+		Done int    `json:"done"`
+		Date string `json:"date"`
 	}
 	if b, err := os.ReadFile(a.statePath); err == nil {
 		_ = json.Unmarshal(b, &st)
+	}
+	a.date = time.Now().Format("2006-01-02")
+	if st.Date != a.date {
+		st.Done = 0
 	}
 	a.done = max(0, st.Done)
 }
@@ -304,9 +317,13 @@ func (a *pomodoro) saveState() {
 	if a.statePath == "" {
 		return
 	}
+	if a.date == "" {
+		a.date = time.Now().Format("2006-01-02")
+	}
 	st := struct {
-		Done int `json:"done"`
-	}{Done: a.done}
+		Done int    `json:"done"`
+		Date string `json:"date"`
+	}{Done: a.done, Date: a.date}
 	if b, err := json.MarshalIndent(st, "", "  "); err == nil {
 		_ = os.WriteFile(a.statePath, b, 0o644)
 	}
@@ -341,7 +358,7 @@ func (a *pomodoro) view(c *ui.Context) {
 	}
 
 	ui.Column(c).Fill().Gap(14).Padding(24).AlignItems(ui.Center).Children(func() {
-		// Header: the name, and a tomato for each session done.
+		// Header: the name, and a tomato for each session done today.
 		ui.Row(c).Fill().Children(func() {
 			ui.Text(c, "番茄钟").FontSize(22).Bold()
 			ui.Spacer(c)
