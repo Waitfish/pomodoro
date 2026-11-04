@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"os"
 	"testing"
 	"time"
 
@@ -73,5 +75,25 @@ func TestDailyRollover(t *testing.T) {
 	a.tick(time.Now())
 	if a.done != 1 {
 		t.Errorf("within a day the count should grow: got %d", a.done)
+	}
+}
+
+// The tray shows a different icon per mode, so the menu bar says at a
+// glance whether a focus or a break is running.
+func TestTrayIcons(t *testing.T) {
+	work, err := trayIconPNG(modeWork)
+	if err != nil {
+		t.Fatal(err)
+	}
+	brk, err := trayIconPNG(modeBreak)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(work, brk) {
+		t.Error("focus and break should show different tray icons")
+	}
+	if os.Getenv("ICON_DUMP") == "1" {
+		_ = os.WriteFile("/tmp/tray-work.png", work, 0o644)
+		_ = os.WriteFile("/tmp/tray-break.png", brk, 0o644)
 	}
 }

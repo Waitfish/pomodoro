@@ -69,9 +69,11 @@ type pomodoro struct {
 	sounds       []*audio.Sound // the built-in alarms, made once
 	tickerStop   chan struct{}  // stops the background clock, when set
 
-	win       *mygo.Window
-	tray      *mygo.Tray
-	lastTitle string
+	win          *mygo.Window
+	tray         *mygo.Tray
+	trayIcons    [2][]byte // colored icons, by mode
+	lastTrayMode int       // the mode the tray icon last showed
+	lastTitle    string
 }
 
 // total is the length of the current session.
@@ -260,6 +262,13 @@ func (a *pomodoro) title() {
 			a.tray.SetTitle(a.clock())
 		} else {
 			a.tray.SetTitle("")
+		}
+		if a.mode != a.lastTrayMode {
+			a.lastTrayMode = a.mode
+			if err := a.tray.SetIcon(a.trayIcons[a.mode], false); err != nil {
+				log.Println("tray icon:", err)
+			}
+			a.tray.SetToolTip("番茄钟 · " + a.modeName())
 		}
 	}
 }
@@ -577,19 +586,48 @@ func buildSounds() []*audio.Sound {
 	}
 }
 
-// trayIconPNG draws the tray icon: a tomato silhouette, black on
-// transparent, which macOS tints to match the menu bar.
-func trayIconPNG() ([]byte, error) {
+// trayIconPNG draws the tray icon for a mode, in color: a red tomato
+// while focusing, a green coffee cup while resting, so one glance at
+// the menu bar says which session is running. These are not template
+// images, because templates are monochrome and could not carry the
+// color.
+func trayIconPNG(mode int) ([]byte, error) {
 	img := image.NewNRGBA(image.Rect(0, 0, 32, 32))
-	black := color.NRGBA{0, 0, 0, 255}
-	for y := range 32 {
-		for x := range 32 {
-			dx, dy := float64(x-16), float64(y-19)
-			inBody := dx*dx+dy*dy <= 10*10
-			inStem := x >= 15 && x <= 17 && y >= 6 && y <= 10
-			inLeaf := y >= 8 && y <= 10 && ((x >= 9 && x <= 13) || (x >= 19 && x <= 23))
-			if inBody || inStem || inLeaf {
-				img.Set(x, y, black)
+	red := color.NRGBA{224, 49, 49, 255}
+	green := color.NRGBA{47, 158, 68, 255}
+	steam := color.NRGBA{110, 178, 120, 255}
+	if mode == modeWork {
+		for y := range 32 {
+			for x := range 32 {
+				dx, dy := float64(x-16), float64(y-19)
+				inBody := dx*dx+dy*dy <= 10*10
+				inStem := x >= 15 && x <= 17 && y >= 6 && y <= 10
+				inLeaf := y >= 8 && y <= 10 && ((x >= 9 && x <= 13) || (x >= 19 && x <= 23))
+				switch {
+				case inBody:
+					img.Set(x, y, red)
+				case inStem || inLeaf:
+					img.Set(x, y, green)
+				}
+			}
+		}
+	} else {
+		for y := range 32 {
+			for x := range 32 {
+				// cup with a rounded bottom, a handle, and steam.
+				inCup := x >= 8 && x <= 21 && y >= 14 && y <= 25 &&
+					(y < 23 || (x >= 8+(25-y) && x <= 21-(25-y)))
+				hx, hy := float64(x-21), float64(y-18)
+				inHandle := x >= 21 && y >= 14 && y <= 22 &&
+					hx*hx+hy*hy >= 2.2*2.2 && hx*hx+hy*hy <= 4*4
+				inSaucer := x >= 6 && x <= 24 && y >= 26 && y <= 27
+				inSteam := y >= 6 && y <= 11 && (x == 11 || x == 14 || x == 17)
+				switch {
+				case inCup || inHandle || inSaucer:
+					img.Set(x, y, green)
+				case inSteam:
+					img.Set(x, y, steam)
+				}
 			}
 		}
 	}
@@ -601,16 +639,19 @@ func trayIconPNG() ([]byte, error) {
 // makeTray puts the tomato in the menu bar. Its menu shows the window,
 // starts and stops the clock, and quits the app.
 func (a *pomodoro) makeTray() {
-	icon, err := trayIconPNG()
-	if err != nil {
-		log.Println("tray icon:", err)
-		return
+	for m := range a.trayIcons {
+		icon, err := trayIconPNG(m)
+		if err != nil {
+			log.Println("tray icon:", err)
+			return
+		}
+		a.trayIcons[m] = icon
 	}
 	tray, err := mygo.NewTray(mygo.TrayOptions{
 		ID:             "main",
-		Icon:           icon,
-		IconIsTemplate: true,
-		ToolTip:        "番茄钟",
+		Icon:           a.trayIcons[a.mode],
+		IconIsTemplate: false,
+		ToolTip:        "番茄钟 · " + a.modeName(),
 		Menu: mygo.NewMenu([]*mygo.MenuItem{
 			{Label: "显示番茄钟", Click: func(*mygo.MenuItem, *mygo.Window) { a.showWindow() }},
 			{Label: "开始 / 暂停", Click: func(*mygo.MenuItem, *mygo.Window) { a.toggle(); a.refresh() }},

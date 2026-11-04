@@ -1,6 +1,6 @@
-fangqiezhong (1.0.5) noble; urgency=medium
+fangqiezhong (1.0.6) noble; urgency=medium
 
-  * 番茄计数改为按天统计：跨过本地午夜自动归零（与其他番茄钟一致）
-  * state.json 记录计数所属日期，隔天重启也从 0 开始
+  * 托盘图标按模式区分：专注=红色番茄，休息=绿色咖啡杯（含蒸汽与杯托），
+    菜单栏一眼可见当前状态；工具提示同步显示「专注中/休息中」
 
- -- Waitfish <daiwj2024@outlook.com>  Wed, 04 Nov 2026 09:40:00 +0800
+ -- Waitfish <daiwj2024@outlook.com>  Wed, 04 Nov 2026 11:35:00 +0800
